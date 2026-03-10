@@ -132,7 +132,7 @@ SOCIETIES = {
         "description": (
             "Performed in The Saga of Khushal Khan Khattak, Macbeth, and Troy."
         ),
-        "keywords": ["dramatic","Dramatic", "macbeth", "troy", "khusahal", "khushal"],
+        "keywords": ["dramatic", "macbeth", "troy", "khusahal", "khushal"],
     },
     "English Literary Society": {
         "role": "Creative Strategist / Deputy Coordinator",
@@ -140,7 +140,7 @@ SOCIETIES = {
             "Participated in movie discussions, open discussions on national heroes, "
             "writers, and poetry."
         ),
-        "keywords": ["english literary","English Literary" ],
+        "keywords": ["english literary" ],
     },
 }
 
