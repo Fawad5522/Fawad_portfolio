@@ -1,19 +1,18 @@
-# =========================
 # Fawad Ahmad Portfolio App
-# =========================
 import streamlit as st
 from pathlib import Path
 import zipfile
 import requests
-from PIL import Image
+import base64
 
 # -------------------------
 # 1) PAGE SETTINGS
 # -------------------------
 st.set_page_config(
-    page_title="Fawad Ahmad Portfolio",
+    page_title="Fawad Ahmad | Data Analyst Portfolio",
     page_icon="📊",
     layout="wide",
+    initial_sidebar_state="collapsed",
 )
 
 # -------------------------
@@ -130,7 +129,7 @@ SOCIETIES = {
         "description": (
             "Performed in The Saga of Khushal Khan Khattak, Macbeth, and Troy."
         ),
-        "keywords": ["dramatic", "macbeth", "troy", "khusahal", "khushal"],
+        "keywords": ["dramatic", "macbeth", "troy", "khushal"],
     },
     "English Literary Society": {
         "role": "Creative Strategist / Deputy Coordinator",
@@ -146,15 +145,10 @@ SOCIETIES = {
 # 3) HELPER FUNCTIONS
 # -------------------------
 def file_path(filename: str) -> Path:
-    """Return full path of a file in the same folder as app.py."""
     return BASE_DIR / filename
 
 
 def extract_zip_if_needed(zip_file: Path, output_folder_name: str) -> Path | None:
-    """
-    Extract zip only once.
-    If folder already exists, it reuses it.
-    """
     output_dir = BASE_DIR / output_folder_name
 
     if not zip_file.exists():
@@ -169,7 +163,6 @@ def extract_zip_if_needed(zip_file: Path, output_folder_name: str) -> Path | Non
 
 
 def find_first_folder(root: Path | None, folder_name: str) -> Path | None:
-    """Find the first folder with a matching name anywhere inside root."""
     if root is None or not root.exists():
         return None
 
@@ -180,7 +173,6 @@ def find_first_folder(root: Path | None, folder_name: str) -> Path | None:
 
 
 def find_first_file(root: Path | None, patterns: list[str]) -> Path | None:
-    """Find first file matching any pattern."""
     if root is None or not root.exists():
         return None
 
@@ -192,7 +184,6 @@ def find_first_file(root: Path | None, patterns: list[str]) -> Path | None:
 
 
 def find_images(root: Path | None, keywords=None) -> list[Path]:
-    """Find image files optionally filtered by keywords in filename."""
     if root is None or not root.exists():
         return []
 
@@ -212,7 +203,6 @@ def find_images(root: Path | None, keywords=None) -> list[Path]:
 
 
 def show_download_button(path: Path | None, label: str, key: str):
-    """Show download button if file exists."""
     if path and path.exists():
         with open(path, "rb") as f:
             st.download_button(
@@ -229,20 +219,12 @@ def show_download_button(path: Path | None, label: str, key: str):
 
 @st.cache_data(show_spinner=False)
 def get_github_repos(username: str):
-    """
-    Get public GitHub repos using GitHub API.
-    This makes the Projects page dynamic.
-    """
     url = f"https://api.github.com/users/{username}/repos?sort=updated&per_page=100"
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         repos = response.json()
-
-        # Remove forks so only your main repos show
         repos = [repo for repo in repos if not repo.get("fork", False)]
-
-        # Sort by stars first, then updated repos
         repos.sort(
             key=lambda x: (x.get("stargazers_count", 0), x.get("updated_at", "")),
             reverse=True,
@@ -253,7 +235,6 @@ def get_github_repos(username: str):
 
 
 def skill_chips(skill_list):
-    """Show skills as small chips."""
     chips_html = ""
     for skill in skill_list:
         chips_html += f'<span class="skill-chip">{skill}</span>'
@@ -261,8 +242,28 @@ def skill_chips(skill_list):
 
 
 def link_button_html(text, url):
-    """Simple HTML button-like link."""
     return f'<a class="custom-link-btn" href="{url}" target="_blank">{text}</a>'
+
+
+def image_to_base64(img_path: Path) -> str:
+    with open(img_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
+
+
+def show_profile_image(img_path: Path):
+    # This function shows profile picture with custom shape + hover effect
+    if img_path.exists():
+        img_base64 = image_to_base64(img_path)
+        st.markdown(
+            f"""
+            <div class="profile-image-wrapper">
+                <img src="data:image/jpeg;base64,{img_base64}" class="profile-image">
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        st.info("Profile image not found.")
 
 
 # -------------------------
@@ -285,65 +286,129 @@ dashboard_images = find_images(powerbi_folder)
 if star_schema_img and star_schema_img in dashboard_images:
     dashboard_images.remove(star_schema_img)
 
-society_images_all = find_images(societies_extract_dir)
-
 # -------------------------
-# 5) SIMPLE CUSTOM STYLING
+# 5) CUSTOM CSS
 # -------------------------
 st.markdown(
     """
     <style>
+    /* Hide sidebar completely */
+    [data-testid="stSidebar"] {
+        display: none;
+    }
+
+    .block-container {
+        padding-top: 1.5rem;
+        padding-left: 3rem;
+        padding-right: 3rem;
+        max-width: 1300px;
+    }
+
     .stApp {
-        background: linear-gradient(180deg, #07111f 0%, #0c1830 100%);
+        background: linear-gradient(180deg, #061120 0%, #0c1a32 100%);
         color: #f5f7fa;
     }
 
-    .hero-card, .info-card {
-        background: rgba(255,255,255,0.06);
+    .hero-card, .info-card, .top-nav-box {
+        background: rgba(255,255,255,0.05);
         padding: 1.2rem;
-        border-radius: 18px;
+        border-radius: 20px;
         border: 1px solid rgba(255,255,255,0.08);
-        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.18);
         margin-bottom: 1rem;
     }
 
     .section-title {
-        font-size: 1.9rem;
-        font-weight: 700;
+        font-size: 2.3rem;
+        font-weight: 800;
         color: #ffffff;
-        margin-bottom: 0.2rem;
+        margin-bottom: 0.1rem;
     }
 
     .muted-text {
-        color: #cfd8e3;
-        font-size: 1rem;
+        color: #d4deea;
+        font-size: 1.05rem;
+        line-height: 1.7;
     }
 
     .custom-link-btn {
         display: inline-block;
-        padding: 0.65rem 1rem;
+        padding: 0.70rem 1.15rem;
         margin: 0.25rem 0.35rem 0.25rem 0;
-        background: #1e90ff;
+        background: linear-gradient(90deg, #1d77ff, #2898ff);
         color: white !important;
         text-decoration: none;
-        border-radius: 10px;
+        border-radius: 12px;
         font-weight: 600;
+        transition: 0.3s ease;
+    }
+
+    .custom-link-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(40,152,255,0.35);
     }
 
     .skill-chip {
         display: inline-block;
-        padding: 0.4rem 0.8rem;
+        padding: 0.45rem 0.9rem;
         margin: 0.25rem;
-        background: rgba(30,144,255,0.18);
+        background: rgba(30,144,255,0.16);
         color: #e8f3ff;
         border: 1px solid rgba(30,144,255,0.35);
         border-radius: 999px;
-        font-size: 0.9rem;
+        font-size: 0.92rem;
     }
 
-    .small-note {
-        color: #b8c6d6;
-        font-size: 0.9rem;
+    /* Top navigation radio buttons styling */
+    div[role="radiogroup"] {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        background: rgba(255,255,255,0.05);
+        padding: 12px;
+        border-radius: 18px;
+        border: 1px solid rgba(255,255,255,0.08);
+        margin-bottom: 25px;
+    }
+
+    div[role="radiogroup"] label {
+        background: rgba(255,255,255,0.05);
+        padding: 10px 16px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.10);
+        cursor: pointer;
+    }
+
+    /* Profile image custom box */
+    .profile-image-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .profile-image {
+        width: 100%;
+        max-width: 360px;
+        height: 510px;
+        object-fit: cover;
+        border-radius: 28px;
+        border: 2px solid rgba(255,255,255,0.14);
+        box-shadow: 0 14px 35px rgba(0,0,0,0.35);
+        transition: transform 0.35s ease, box-shadow 0.35s ease, border 0.35s ease;
+    }
+
+    .profile-image:hover {
+        transform: scale(1.03);
+        box-shadow: 0 20px 45px rgba(0,0,0,0.45);
+        border: 2px solid rgba(61,156,255,0.45);
+        cursor: pointer;
+    }
+
+    .small-heading {
+        font-size: 1rem;
+        color: #9fb7d6;
+        font-weight: 600;
+        letter-spacing: 0.5px;
     }
     </style>
     """,
@@ -351,11 +416,11 @@ st.markdown(
 )
 
 # -------------------------
-# 6) SIDEBAR
+# 6) TOP NAVIGATION
 # -------------------------
-st.sidebar.title("📌 Portfolio Menu")
-page = st.sidebar.radio(
-    "Go to",
+# Sidebar hata diya hai, ab top pe horizontal menu hai
+page = st.radio(
+    "Navigation",
     [
         "Home",
         "About",
@@ -366,30 +431,24 @@ page = st.sidebar.radio(
         "Projects",
         "Contact",
     ],
+    horizontal=True,
+    label_visibility="collapsed",
 )
-
-st.sidebar.markdown("---")
-st.sidebar.markdown(f"**{PROFILE['name']}**")
-st.sidebar.caption(PROFILE["headline"])
-st.sidebar.markdown(f"[LinkedIn]({PROFILE['linkedin']})")
-st.sidebar.markdown(f"[GitHub]({PROFILE['github']})")
 
 # -------------------------
 # 7) HOME PAGE
 # -------------------------
 if page == "Home":
-    col1, col2 = st.columns([1, 2], gap="large")
+    col1, col2 = st.columns([1, 1.4], gap="large")
 
     with col1:
-        if profile_img_path.exists():
-            st.image(str(profile_img_path), use_container_width=True)
-        else:
-            st.info("Profile image not found.")
+        show_profile_image(profile_img_path)
 
     with col2:
         st.markdown('<div class="hero-card">', unsafe_allow_html=True)
+        st.markdown("<div class='small-heading'>WELCOME TO MY PORTFOLIO</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='section-title'>{PROFILE['name']}</div>", unsafe_allow_html=True)
-        st.markdown(f"### {PROFILE['headline']}")
+        st.markdown(f"## {PROFILE['headline']}")
         st.markdown(f"<p class='muted-text'>{PROFILE['short_intro']}</p>", unsafe_allow_html=True)
 
         st.markdown(
@@ -400,17 +459,11 @@ if page == "Home":
 
         st.markdown("</div>", unsafe_allow_html=True)
 
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Degree", "BSCS")
-        c2.metric("Focus", "Data Science")
-        c3.metric("BI Tool", "Power BI")
-        c4.metric("Role", "Graduate")
-
-        st.markdown("#### Quick Summary")
+        st.subheader("Quick Summary")
         st.write(
-            "Computer Science graduate with interest in Data Science, Python, "
-            "SQL, Excel, Streamlit, and Business Intelligence. Strong in "
-            "leadership, communication, and practical project work."
+            "Computer Science graduate with interest in Data Science, Python, SQL, "
+            "Excel, Streamlit, and Business Intelligence. Strong in leadership, "
+            "communication, and practical project work."
         )
 
         show_download_button(resume_pdf_path, "📄 Download Resume", "resume_home")
@@ -476,11 +529,6 @@ elif page == "FYP & Thesis":
 
     st.markdown(f"## {FYP_INFO['title']}")
     st.write(FYP_INFO["summary"])
-
-    m1, m2, m3 = st.columns(3)
-    m1.metric("Main Tool", "Power BI")
-    m2.metric("Project Type", "Business Intelligence")
-    m3.metric("Outputs", "Dashboards + Thesis")
 
     tab1, tab2, tab3, tab4 = st.tabs(["Overview", "Methodology", "Dashboards", "Downloads"])
 
@@ -565,7 +613,6 @@ elif page == "Leadership & Societies":
         "and active participation in campus life."
     )
 
-    # Create one tab for each society
     tabs = st.tabs(list(SOCIETIES.keys()))
 
     for tab, (society_name, data) in zip(tabs, SOCIETIES.items()):
@@ -611,14 +658,13 @@ elif page == "Projects":
 
     repos = get_github_repos(PROFILE["github_username"])
 
-    # Always show the GitHub profile link
     st.markdown(
         link_button_html("Open GitHub Profile", PROFILE["github"]),
         unsafe_allow_html=True,
     )
 
     if repos:
-        for repo in repos[:8]:  # show top 8 repos
+        for repo in repos[:8]:
             st.markdown('<div class="info-card">', unsafe_allow_html=True)
             st.markdown(f"### {repo.get('name', 'Untitled Repo')}")
             st.write(repo.get("description") or "No description added yet.")
@@ -631,10 +677,7 @@ elif page == "Projects":
             )
             st.markdown("</div>", unsafe_allow_html=True)
     else:
-        st.warning(
-            "Could not fetch GitHub repositories right now. "
-            "Check your internet connection or make sure the username is correct."
-        )
+        st.warning("Could not fetch GitHub repositories right now.")
 
 # -------------------------
 # 14) CONTACT PAGE
@@ -657,5 +700,3 @@ elif page == "Contact":
         st.markdown(link_button_html("GitHub", PROFILE["github"]), unsafe_allow_html=True)
     with c3:
         show_download_button(resume_pdf_path, "📄 Download Resume", "resume_contact")
-
-    st.caption("You can edit any text, colors, or section order later according to your preference.")
