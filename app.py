@@ -1,9 +1,14 @@
+# =========================
 # Fawad Ahmad Portfolio App
+# Final cleaned version
+# =========================
+# Run with:
+# streamlit run app.py
+
 import streamlit as st
 from pathlib import Path
 import zipfile
 import requests
-import base64
 
 # -------------------------
 # 1) PAGE SETTINGS
@@ -12,7 +17,6 @@ st.set_page_config(
     page_title="Fawad Ahmad | Data Analyst Portfolio",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="collapsed",
 )
 
 # -------------------------
@@ -20,6 +24,7 @@ st.set_page_config(
 # -------------------------
 BASE_DIR = Path(__file__).parent
 
+# File names - keep these files in same folder as app.py
 FILES = {
     "profile_image": "portfolio image.jpeg",
     "resume_pdf": "fawad-data-analyst.pdf",
@@ -145,10 +150,12 @@ SOCIETIES = {
 # 3) HELPER FUNCTIONS
 # -------------------------
 def file_path(filename: str) -> Path:
+    """Return full path of file."""
     return BASE_DIR / filename
 
 
-def extract_zip_if_needed(zip_file: Path, output_folder_name: str) -> Path | None:
+def extract_zip_if_needed(zip_file: Path, output_folder_name: str):
+    """Extract zip only once."""
     output_dir = BASE_DIR / output_folder_name
 
     if not zip_file.exists():
@@ -162,7 +169,8 @@ def extract_zip_if_needed(zip_file: Path, output_folder_name: str) -> Path | Non
     return output_dir
 
 
-def find_first_folder(root: Path | None, folder_name: str) -> Path | None:
+def find_first_folder(root, folder_name: str):
+    """Find a folder by name."""
     if root is None or not root.exists():
         return None
 
@@ -172,7 +180,8 @@ def find_first_folder(root: Path | None, folder_name: str) -> Path | None:
     return None
 
 
-def find_first_file(root: Path | None, patterns: list[str]) -> Path | None:
+def find_first_file(root, patterns):
+    """Find first matching file."""
     if root is None or not root.exists():
         return None
 
@@ -183,7 +192,8 @@ def find_first_file(root: Path | None, patterns: list[str]) -> Path | None:
     return None
 
 
-def find_images(root: Path | None, keywords=None) -> list[Path]:
+def find_images(root, keywords=None):
+    """Find image files, optionally by keyword."""
     if root is None or not root.exists():
         return []
 
@@ -202,7 +212,8 @@ def find_images(root: Path | None, keywords=None) -> list[Path]:
     return sorted(images, key=lambda x: x.name.lower())
 
 
-def show_download_button(path: Path | None, label: str, key: str):
+def show_download_button(path, label: str, key: str):
+    """Show file download button."""
     if path and path.exists():
         with open(path, "rb") as f:
             st.download_button(
@@ -219,12 +230,17 @@ def show_download_button(path: Path | None, label: str, key: str):
 
 @st.cache_data(show_spinner=False)
 def get_github_repos(username: str):
+    """Fetch public GitHub repos."""
     url = f"https://api.github.com/users/{username}/repos?sort=updated&per_page=100"
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         repos = response.json()
+
+        # Remove forked repos
         repos = [repo for repo in repos if not repo.get("fork", False)]
+
+        # Sort by stars and updated date
         repos.sort(
             key=lambda x: (x.get("stargazers_count", 0), x.get("updated_at", "")),
             reverse=True,
@@ -235,6 +251,7 @@ def get_github_repos(username: str):
 
 
 def skill_chips(skill_list):
+    """Show skills like chips."""
     chips_html = ""
     for skill in skill_list:
         chips_html += f'<span class="skill-chip">{skill}</span>'
@@ -242,32 +259,12 @@ def skill_chips(skill_list):
 
 
 def link_button_html(text, url):
+    """HTML link button."""
     return f'<a class="custom-link-btn" href="{url}" target="_blank">{text}</a>'
 
 
-def image_to_base64(img_path: Path) -> str:
-    with open(img_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode()
-
-
-def show_profile_image(img_path: Path):
-    # This function shows profile picture with custom shape + hover effect
-    if img_path.exists():
-        img_base64 = image_to_base64(img_path)
-        st.markdown(
-            f"""
-            <div class="profile-image-wrapper">
-                <img src="data:image/jpeg;base64,{img_base64}" class="profile-image">
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    else:
-        st.info("Profile image not found.")
-
-
 # -------------------------
-# 4) LOAD FILES / EXTRACT ZIPS
+# 4) LOAD FILES / EXTRACT ZIP
 # -------------------------
 profile_img_path = file_path(FILES["profile_image"])
 resume_pdf_path = file_path(FILES["resume_pdf"])
@@ -292,123 +289,57 @@ if star_schema_img and star_schema_img in dashboard_images:
 st.markdown(
     """
     <style>
-    /* Hide sidebar completely */
-    [data-testid="stSidebar"] {
-        display: none;
-    }
-
-    .block-container {
-        padding-top: 1.5rem;
-        padding-left: 3rem;
-        padding-right: 3rem;
-        max-width: 1300px;
-    }
-
     .stApp {
-        background: linear-gradient(180deg, #061120 0%, #0c1a32 100%);
+        background: linear-gradient(180deg, #07111f 0%, #0c1830 100%);
         color: #f5f7fa;
     }
 
-    .hero-card, .info-card, .top-nav-box {
-        background: rgba(255,255,255,0.05);
+    .hero-card, .info-card {
+        background: rgba(255,255,255,0.06);
         padding: 1.2rem;
-        border-radius: 20px;
+        border-radius: 18px;
         border: 1px solid rgba(255,255,255,0.08);
-        box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
         margin-bottom: 1rem;
     }
 
     .section-title {
-        font-size: 2.3rem;
-        font-weight: 800;
+        font-size: 1.9rem;
+        font-weight: 700;
         color: #ffffff;
-        margin-bottom: 0.1rem;
+        margin-bottom: 0.2rem;
     }
 
     .muted-text {
-        color: #d4deea;
-        font-size: 1.05rem;
-        line-height: 1.7;
+        color: #cfd8e3;
+        font-size: 1rem;
     }
 
     .custom-link-btn {
         display: inline-block;
-        padding: 0.70rem 1.15rem;
+        padding: 0.65rem 1rem;
         margin: 0.25rem 0.35rem 0.25rem 0;
-        background: linear-gradient(90deg, #1d77ff, #2898ff);
+        background: #1e90ff;
         color: white !important;
         text-decoration: none;
-        border-radius: 12px;
+        border-radius: 10px;
         font-weight: 600;
-        transition: 0.3s ease;
-    }
-
-    .custom-link-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(40,152,255,0.35);
     }
 
     .skill-chip {
         display: inline-block;
-        padding: 0.45rem 0.9rem;
+        padding: 0.4rem 0.8rem;
         margin: 0.25rem;
-        background: rgba(30,144,255,0.16);
+        background: rgba(30,144,255,0.18);
         color: #e8f3ff;
         border: 1px solid rgba(30,144,255,0.35);
         border-radius: 999px;
-        font-size: 0.92rem;
+        font-size: 0.9rem;
     }
 
-    /* Top navigation radio buttons styling */
-    div[role="radiogroup"] {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        background: rgba(255,255,255,0.05);
-        padding: 12px;
-        border-radius: 18px;
-        border: 1px solid rgba(255,255,255,0.08);
-        margin-bottom: 25px;
-    }
-
-    div[role="radiogroup"] label {
-        background: rgba(255,255,255,0.05);
-        padding: 10px 16px;
-        border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.10);
-        cursor: pointer;
-    }
-
-    /* Profile image custom box */
-    .profile-image-wrapper {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .profile-image {
-        width: 100%;
-        max-width: 360px;
-        height: 510px;
-        object-fit: cover;
-        border-radius: 28px;
-        border: 2px solid rgba(255,255,255,0.14);
-        box-shadow: 0 14px 35px rgba(0,0,0,0.35);
-        transition: transform 0.35s ease, box-shadow 0.35s ease, border 0.35s ease;
-    }
-
-    .profile-image:hover {
-        transform: scale(1.03);
-        box-shadow: 0 20px 45px rgba(0,0,0,0.45);
-        border: 2px solid rgba(61,156,255,0.45);
-        cursor: pointer;
-    }
-
-    .small-heading {
-        font-size: 1rem;
-        color: #9fb7d6;
-        font-weight: 600;
-        letter-spacing: 0.5px;
+    .small-note {
+        color: #b8c6d6;
+        font-size: 0.9rem;
     }
     </style>
     """,
@@ -416,11 +347,11 @@ st.markdown(
 )
 
 # -------------------------
-# 6) TOP NAVIGATION
+# 6) SIDEBAR MENU
 # -------------------------
-# Sidebar hata diya hai, ab top pe horizontal menu hai
-page = st.radio(
-    "Navigation",
+st.sidebar.title("📌 Portfolio Menu")
+page = st.sidebar.radio(
+    "Go to",
     [
         "Home",
         "About",
@@ -431,24 +362,24 @@ page = st.radio(
         "Projects",
         "Contact",
     ],
-    horizontal=True,
-    label_visibility="collapsed",
 )
 
 # -------------------------
 # 7) HOME PAGE
 # -------------------------
 if page == "Home":
-    col1, col2 = st.columns([1, 1.4], gap="large")
+    col1, col2 = st.columns([1, 2], gap="large")
 
     with col1:
-        show_profile_image(profile_img_path)
+        if profile_img_path.exists():
+            st.image(str(profile_img_path), use_container_width=True)
+        else:
+            st.info("Profile image not found.")
 
     with col2:
         st.markdown('<div class="hero-card">', unsafe_allow_html=True)
-        st.markdown("<div class='small-heading'>WELCOME TO MY PORTFOLIO</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='section-title'>{PROFILE['name']}</div>", unsafe_allow_html=True)
-        st.markdown(f"## {PROFILE['headline']}")
+        st.markdown(f"### {PROFILE['headline']}")
         st.markdown(f"<p class='muted-text'>{PROFILE['short_intro']}</p>", unsafe_allow_html=True)
 
         st.markdown(
@@ -459,11 +390,11 @@ if page == "Home":
 
         st.markdown("</div>", unsafe_allow_html=True)
 
-        st.subheader("Quick Summary")
+        st.markdown("#### Quick Summary")
         st.write(
-            "Computer Science graduate with interest in Data Science, Python, SQL, "
-            "Excel, Streamlit, and Business Intelligence. Strong in leadership, "
-            "communication, and practical project work."
+            "Computer Science graduate with interest in Data Science, Python, "
+            "SQL, Excel, Streamlit, and Business Intelligence. Strong in "
+            "leadership, communication, and practical project work."
         )
 
         show_download_button(resume_pdf_path, "📄 Download Resume", "resume_home")
@@ -486,7 +417,11 @@ if page == "Home":
         preview_cols = st.columns(3)
         for i, img_path in enumerate(dashboard_images[:3]):
             with preview_cols[i % 3]:
-                st.image(str(img_path), caption=img_path.stem.replace("_", " ").title(), use_container_width=True)
+                st.image(
+                    str(img_path),
+                    caption=img_path.stem.replace("_", " ").title(),
+                    use_container_width=True
+                )
 
 # -------------------------
 # 8) ABOUT PAGE
@@ -627,11 +562,7 @@ elif page == "Leadership & Societies":
                 cols = st.columns(2)
                 for i, img_path in enumerate(matched_images):
                     with cols[i % 2]:
-                        st.image(
-                            str(img_path),
-                            caption=img_path.stem,
-                            use_container_width=True,
-                        )
+                        st.image(str(img_path), caption=img_path.stem, use_container_width=True)
             else:
                 st.info("No matching images found for this section.")
 
@@ -677,7 +608,10 @@ elif page == "Projects":
             )
             st.markdown("</div>", unsafe_allow_html=True)
     else:
-        st.warning("Could not fetch GitHub repositories right now.")
+        st.warning(
+            "Could not fetch GitHub repositories right now. "
+            "Check your internet connection or make sure the username is correct."
+        )
 
 # -------------------------
 # 14) CONTACT PAGE
